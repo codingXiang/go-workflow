@@ -12,6 +12,12 @@ var (
 
 type FailureFunc func(err error, step *Step, context Context) error
 
+func NoRetry() FailureFunc {
+	return func(err error, step *Step, context Context) error {
+		return err
+	}
+}
+
 func RetryFailure(tries int) FailureFunc {
 	return func(err error, step *Step, context Context) error {
 		var currError error
