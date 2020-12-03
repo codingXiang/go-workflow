@@ -11,6 +11,17 @@ var (
 )
 
 type FailureFunc func(err error, step *Step, context Context) error
+type Failure func(err error, step *Step, context Context, callback func(objs ...interface{}) error) error
+
+func FailureCallback() Failure {
+	return func(err error, step *Step, context Context, callback func(objs ...interface{}) error) error {
+		if e := callback(); e != nil {
+			return e
+		} else {
+			return err
+		}
+	}
+}
 
 func NoRetry() FailureFunc {
 	return func(err error, step *Step, context Context) error {
