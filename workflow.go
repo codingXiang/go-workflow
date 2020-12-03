@@ -23,7 +23,7 @@ func New() *Workflow {
 	return w
 }
 
-func (w *Workflow) Run(callback func() error) error {
+func (w *Workflow) Run(callback func(objs ...interface{}) error) error {
 	for _, step := range w.queue {
 		fmt.Printf("Running step: %s ", step.Label)
 		if err := step.Run(w.Context); err != nil {
