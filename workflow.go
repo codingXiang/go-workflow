@@ -8,6 +8,7 @@ type Context interface{}
 
 type Workflow struct {
 	Start     *Step
+	OnSuccess SuccessFunc
 	OnFailure FailureFunc
 	Context   Context
 
@@ -18,10 +19,11 @@ type Workflow struct {
 func New() *Workflow {
 	w := &Workflow{}
 	w.inQueue = make(map[*Step]bool)
+	w.OnSuccess = SuccessCallback()
 	return w
 }
 
-func (w *Workflow) Run() error {
+func (w *Workflow) Run(callback func() error) error {
 	for _, step := range w.queue {
 		fmt.Printf("Running step: %s ", step.Label)
 		if err := step.Run(w.Context); err != nil {
@@ -31,6 +33,7 @@ func (w *Workflow) Run() error {
 			}
 		}
 		fmt.Println("COMPLETE")
+		w.OnSuccess(step, w.Context, callback)
 	}
 	return nil
 }
