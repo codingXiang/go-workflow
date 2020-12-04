@@ -1,24 +1,28 @@
 package workflow
 
 import (
+	"context"
+	"errors"
 	"fmt"
 )
 
 type Context interface{}
 
 type Workflow struct {
-	Start           *Step
 	OnSuccess       SuccessFunc
 	FailureCallback Failure
 	OnFailure       FailureFunc
-	Context         Context
-
-	queue   []*Step
-	inQueue map[*Step]bool
+	Context         context.Context
+	Start           *Step
+	channel         chan *Step
+	queue           []*Step
+	inQueue         map[*Step]bool
 }
 
 func New() *Workflow {
-	w := &Workflow{}
+	w := &Workflow{
+		Context: context.Background(),
+	}
 	w.inQueue = make(map[*Step]bool)
 	w.OnSuccess = SuccessCallback()
 	w.FailureCallback = FailureCallback()
@@ -26,35 +30,47 @@ func New() *Workflow {
 }
 
 func (w *Workflow) Run(successCallback func(objs ...interface{}) error, failCallback func(objs ...interface{}) error) error {
-	for _, step := range w.queue {
-		fmt.Printf("Running step: %s ", step.Label)
-		if err := step.Run(w.Context); err != nil {
-			if err := w.OnFailure(err, step, w.Context); err != nil {
-				fmt.Println("FAILED")
-				w.FailureCallback(err, step, w.Context, failCallback)
-				return err
+	w.loadQueue()
+	for {
+		select {
+		case <-w.Context.Done():
+			return errors.New("context failed")
+		case step, ok := <-w.channel:
+			if !ok {
+				fmt.Println("COMPLETE")
+				w.OnSuccess(step, w.Context, successCallback)
+				return nil
 			}
+			if err := step.Run(w.Context); err != nil {
+				if err := w.OnFailure(err, step, w.Context); err != nil {
+					fmt.Println("FAILED")
+					if w.FailureCallback != nil {
+						w.FailureCallback(err, step, w.Context, failCallback)
+					}
+					return err
+				}
+			}
+
 		}
-		fmt.Println("COMPLETE")
-		w.OnSuccess(step, w.Context, successCallback)
 	}
-	return nil
 }
 
-func (w *Workflow) AddStep(s *Step) {
+func (w *Workflow) AddSteps(steps ...*Step) {
 	if w.queue == nil {
 		w.queue = make([]*Step, 0)
 	}
-	w.queue = append(w.queue, s)
+	for _, s := range steps {
+		w.queue = append(w.queue, s)
+	}
 }
 
-func (w *Workflow) loadQueue(s *Step) {
+func (w *Workflow) loadStep(s *Step) {
 	if s == nil {
 		return
 	}
 
 	for _, step := range s.DependsOn {
-		w.loadQueue(step)
+		w.loadStep(step)
 	}
 
 	if !w.inQueue[s] {
@@ -62,4 +78,13 @@ func (w *Workflow) loadQueue(s *Step) {
 		w.queue = append(w.queue, s)
 	}
 	return
+}
+
+func (w *Workflow) loadQueue() {
+	w.loadStep(w.Start)
+	w.channel = make(chan *Step, len(w.queue))
+	for _, s := range w.queue {
+		w.channel <- s
+	}
+	close(w.channel)
 }

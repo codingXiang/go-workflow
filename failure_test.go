@@ -22,7 +22,7 @@ func TestFailureFunc(t *testing.T) {
 		},
 	}
 
-	err := w.Run()
+	err := w.Run(nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -38,7 +38,7 @@ func TestInteractiveFailure(t *testing.T) {
 
 	w := workflow.New()
 	w.OnFailure = workflow.InteractiveFailure
-	w.AddSteps([]*workflow.Step{
+	w.AddSteps(
 		&workflow.Step{
 			Label: "fail workflow",
 			Run: func(c workflow.Context) error {
@@ -52,9 +52,9 @@ func TestInteractiveFailure(t *testing.T) {
 				return nil
 			},
 		},
-	})
+	)
 
-	err := w.Run()
+	err := w.Run(nil, nil)
 	if err != nil {
 		t.Error(err)
 	}

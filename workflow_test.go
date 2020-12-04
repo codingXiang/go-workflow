@@ -17,8 +17,9 @@ func TestBasicWorkflow(t *testing.T) {
 	}
 
 	w := workflow.New()
+	//w.AddStep(step)
 	w.Start = step
-	err := w.Run()
+	err := w.Run(nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,7 +73,7 @@ func TestDependancyWorkflow(t *testing.T) {
 
 	w := workflow.New()
 	w.Start = base
-	err := w.Run()
+	err := w.Run(nil, nil)
 	if err != nil {
 		t.Error(err)
 	}
