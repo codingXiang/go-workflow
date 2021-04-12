@@ -50,7 +50,7 @@ func (w *Workflow) Run(successCallback func(objs ...interface{}) error, failCall
 						w.FailureCallback(err, step, w.Context, failCallback)
 					}
 					if step.Hook != nil {
-						return step.Hook(resp, err)
+						return step.Hook(step, resp, err)
 					}
 					return err
 				}

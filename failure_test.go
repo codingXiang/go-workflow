@@ -39,6 +39,7 @@ func TestInteractiveFailure(t *testing.T) {
 	w := workflow.New()
 	w.OnFailure = workflow.InteractiveFailure
 	w.AddSteps(
+		nil,
 		&workflow.Step{
 			Label: "fail workflow",
 			Run: func(c workflow.Context) (map[string]interface{}, error) {
