@@ -60,11 +60,14 @@ func (w *Workflow) Run(successCallback func(objs ...interface{}) error, failCall
 	}
 }
 
-func (w *Workflow) AddSteps(steps ...*Step) {
+func (w *Workflow) AddSteps(hook StepHook, steps ...*Step) {
 	if w.queue == nil {
 		w.queue = make([]*Step, 0)
 	}
 	for _, s := range steps {
+		if hook != nil {
+			s.Hook = hook
+		}
 		w.queue = append(w.queue, s)
 	}
 }
