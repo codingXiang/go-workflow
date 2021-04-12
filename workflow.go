@@ -41,11 +41,16 @@ func (w *Workflow) Run(successCallback func(objs ...interface{}) error, failCall
 				w.OnSuccess(step, w.Context, successCallback)
 				return nil
 			}
-			if err := step.Run(w.Context); err != nil {
-				if err := w.OnFailure(err, step, w.Context); err != nil {
+			resp, err := step.Run(w.Context)
+
+			if err != nil {
+				if err = w.OnFailure(err, step, w.Context); err != nil {
 					fmt.Println("FAILED")
 					if w.FailureCallback != nil {
 						w.FailureCallback(err, step, w.Context, failCallback)
+					}
+					if step.Hook != nil {
+						return step.Hook(resp, err)
 					}
 					return err
 				}

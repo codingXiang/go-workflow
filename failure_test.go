@@ -17,8 +17,8 @@ func TestFailureFunc(t *testing.T) {
 	}
 	w.Start = &workflow.Step{
 		Label: "fail workflow",
-		Run: func(c workflow.Context) error {
-			return errors.New("generic error")
+		Run: func(c workflow.Context) (map[string]interface{}, error) {
+			return nil, errors.New("generic error")
 		},
 	}
 
@@ -41,15 +41,15 @@ func TestInteractiveFailure(t *testing.T) {
 	w.AddSteps(
 		&workflow.Step{
 			Label: "fail workflow",
-			Run: func(c workflow.Context) error {
-				return errors.New("generic error")
+			Run: func(c workflow.Context) (map[string]interface{}, error) {
+				return nil, errors.New("generic error")
 			},
 		},
 		&workflow.Step{
 			Label: "succeed workflow",
-			Run: func(c workflow.Context) error {
+			Run: func(c workflow.Context) (map[string]interface{}, error) {
 				testVar = true
-				return nil
+				return nil, nil
 			},
 		},
 	)

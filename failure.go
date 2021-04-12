@@ -33,7 +33,7 @@ func RetryFailure(tries int) FailureFunc {
 	return func(err error, step *Step, context Context) error {
 		var currError error
 		for tries > 0 {
-			currError = step.Run(context)
+			_, currError = step.Run(context)
 			if currError == nil {
 				return nil
 			}
@@ -55,7 +55,7 @@ func InteractiveFailure(err error, step *Step, context Context) error {
 		}
 		switch action {
 		case "r":
-			nextErr := step.Run(context)
+			_, nextErr := step.Run(context)
 			if nextErr != nil {
 				return InteractiveFailure(nextErr, step, context)
 			} else {

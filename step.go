@@ -4,11 +4,13 @@ import (
 	"time"
 )
 
-type StepFunc func(context Context) error
+type StepFunc func(context Context) (map[string]interface{}, error)
+type StepHook func(data map[string]interface{}, err error) error
 
 type Step struct {
 	Timeout   time.Duration
 	Label     string
 	Run       StepFunc
+	Hook      StepHook
 	DependsOn []*Step
 }

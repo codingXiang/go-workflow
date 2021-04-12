@@ -10,9 +10,9 @@ func TestBasicWorkflow(t *testing.T) {
 
 	step := &workflow.Step{
 		Label: "modify testVar",
-		Run: func(c workflow.Context) error {
+		Run: func(c workflow.Context) (map[string]interface{}, error) {
 			testVar = true
-			return nil
+			return nil, nil
 		},
 	}
 
@@ -33,41 +33,41 @@ func TestDependancyWorkflow(t *testing.T) {
 
 	one := &workflow.Step{
 		Label: "modify testVar 1",
-		Run: func(c workflow.Context) error {
+		Run: func(c workflow.Context) (map[string]interface{}, error) {
 			testVars[1] = true
-			return nil
+			return nil, nil
 		},
 	}
 
 	three := &workflow.Step{
 		Label: "modify testVar 3",
-		Run: func(c workflow.Context) error {
+		Run: func(c workflow.Context) (map[string]interface{}, error) {
 			testVars[3] = true
-			return nil
+			return nil, nil
 		},
 	}
 
 	two := &workflow.Step{
 		Label:     "modify testVar 2",
 		DependsOn: []*workflow.Step{three},
-		Run: func(c workflow.Context) error {
+		Run: func(c workflow.Context) (map[string]interface{}, error) {
 			if !testVars[3] {
 				t.Fail()
 			}
 			testVars[2] = true
-			return nil
+			return nil, nil
 		},
 	}
 
 	base := &workflow.Step{
 		Label:     "modify testVar 0",
 		DependsOn: []*workflow.Step{one, two},
-		Run: func(c workflow.Context) error {
+		Run: func(c workflow.Context) (map[string]interface{}, error) {
 			if !testVars[1] || !testVars[2] {
 				t.Fail()
 			}
 			testVars[0] = true
-			return nil
+			return nil, nil
 		},
 	}
 
