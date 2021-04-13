@@ -54,6 +54,10 @@ func (w *Workflow) Run(successCallback func(objs ...interface{}) error, failCall
 					}
 					return err
 				}
+			} else {
+				if step.Hook != nil {
+					return step.Hook(step, resp, err)
+				}
 			}
 
 		}
