@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"context"
-	"errors"
 	"fmt"
 )
 
@@ -14,7 +13,6 @@ type Workflow struct {
 	OnFailure       FailureFunc
 	Context         context.Context
 	Start           *Step
-	channel         chan *Step
 	queue           []*Step
 	inQueue         map[*Step]bool
 }
@@ -30,41 +28,30 @@ func New() *Workflow {
 }
 
 func (w *Workflow) Run(successCallback func(objs ...interface{}) error, failCallback func(objs ...interface{}) error) error {
-	w.loadQueue()
-	for {
-		select {
-		case <-w.Context.Done():
-			return errors.New("context failed")
-		case step, ok := <-w.channel:
-			if !ok {
-				fmt.Println("COMPLETE")
-				w.OnSuccess(step, w.Context, successCallback)
-				return nil
-			}
-			resp, err := step.Run(w.Context)
-
-			if err != nil {
-				if err = w.OnFailure(err, step, w.Context); err != nil {
-					fmt.Println("FAILED")
-					if w.FailureCallback != nil {
-						w.FailureCallback(err, step, w.Context, failCallback)
-					}
-					if step.Hook != nil {
-						return step.Hook(step, resp, err)
-					}
+	for _, step := range w.queue {
+		if resp, err := step.Run(w.Context); err == nil {
+			// step work fine
+			if step.Hook != nil {
+				if err := step.Hook(step, resp, err); err != nil {
 					return err
 				}
-			} else {
+			}
+		} else {
+			// step run failed
+			if err = w.OnFailure(err, step, w.Context); err != nil {
+				fmt.Println("FAILED")
+				if w.FailureCallback != nil {
+					return w.FailureCallback(err, step, w.Context, failCallback)
+				}
 				if step.Hook != nil {
-					if err := step.Hook(step, resp, err); err != nil {
+					if err = step.Hook(step, resp, err); err != nil {
 						return err
 					}
-
 				}
 			}
-
 		}
 	}
+	return w.OnSuccess(nil, w.Context, successCallback)
 }
 
 func (w *Workflow) AddSteps(hook StepHook, steps ...*Step) {
@@ -93,13 +80,4 @@ func (w *Workflow) loadStep(s *Step) {
 		w.queue = append(w.queue, s)
 	}
 	return
-}
-
-func (w *Workflow) loadQueue() {
-	w.loadStep(w.Start)
-	w.channel = make(chan *Step, len(w.queue))
-	for _, s := range w.queue {
-		w.channel <- s
-	}
-	close(w.channel)
 }
